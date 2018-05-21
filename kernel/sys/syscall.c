@@ -365,6 +365,12 @@ static void sys_write(int fd, void *buf, size_t nbytes)
         return; 
     }
 
+    if(!proc_ptr_validate(cur_thread->owner,buf))
+    {
+	arch_syscall_return(cur_thread, -EFAULT);
+	return;
+    }
+    
     struct file *file = &cur_thread->owner->fds[fd];
     int ret = vfs_file_write(file, buf, nbytes);
     arch_syscall_return(cur_thread, ret);
