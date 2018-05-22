@@ -914,6 +914,5 @@ struct file *new_file(struct inode *node, off_t offset, int flags)
     f->node = node;
     f->offset = offset;
     f->flags = flags;
-    f->fd_count = 1;
     return f;
 }

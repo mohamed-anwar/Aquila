@@ -26,9 +26,9 @@ static int copy_fds(proc_t *parent, proc_t *fork)
 
     memcpy(fork->fds, parent->fds, FDS_COUNT * sizeof(struct file *));
 
-    for(int i =0; i < FDS_COUNT; i++) //increment the fd count
+    for(int i =0; i < FDS_COUNT; i++) //increment the ref count
 	if(fork->fds[i])
-	    fork->fds[i]->fd_count++;
+	    fork->fds[i]->node->ref++;
     
     return 0;
 }

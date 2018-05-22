@@ -117,7 +117,6 @@ struct file {
     struct inode *node;
     off_t offset;
     int flags;
-    int fd_count; //count for number of fds to this file
     //int ref;
 } __packed;
 
