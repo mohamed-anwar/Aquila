@@ -67,7 +67,6 @@ static void sys_close(int fildes)
 
     int ret = vfs_file_close(file);
     proc_fd_release(cur_thread->owner,fildes); // fd must be released like that
-    cur_thread->owner->fds[fildes] = NULL;
     arch_syscall_return(cur_thread, ret);
 }
 
@@ -194,7 +193,7 @@ static void sys_lseek(int fildes, off_t offset, int whence)
 
 static void sys_open(const char *path, int oflags)
 {
-    printk("[%d:%d] %s: ss open(path=%s, oflags=0x%x)\n", cur_thread->owner->pid, cur_thread->tid, cur_thread->owner->name, path, oflags);
+    printk("[%d:%d] %s: open(path=%s, oflags=0x%x)\n", cur_thread->owner->pid, cur_thread->tid, cur_thread->owner->name, path, oflags);
     
     int fd = proc_fd_get(cur_thread->owner);  /* Find a free file descriptor */
     
@@ -236,9 +235,7 @@ o_creat:
 
 done:
     if (ret < 0) { /* open returned an error code */
-        //proc_fd_release(cur_thread->owner, fd);
-	kfree(cur_thread->owner->fds[fd]);
-	cur_thread->owner->fds[fd] = NULL;
+	proc_fd_release(cur_thread->owner,fd);
         vfs_close(inode);
     } else {
         ret = fd;

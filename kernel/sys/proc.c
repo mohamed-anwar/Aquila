@@ -210,26 +210,19 @@ int proc_reap(proc_t *proc)
 
 int proc_fd_get(proc_t *proc)
 {
-    for (int i = 0; i < FDS_COUNT; ++i) {
-        if (!proc->fds[i]) {
+    for (int i = 0; i < FDS_COUNT; ++i)
+        if (!proc->fds[i])
             return i;
-        }
-    }
-
     return -1;
 }
 
 void proc_fd_release(proc_t *proc, int fd)
 {
-    if (fd < FDS_COUNT) {
-        if(proc->fds[fd])
-	{
+    if (fd < FDS_COUNT && proc->fds[fd])
+    {
 	    if(! --proc->fds[fd]->fd_count) // if no other fd using it
-	    {
 		kfree(proc->fds[fd]);
-	    }
-	}
-	
+	    proc->fds[fd] = NULL;
     }
 }
 
