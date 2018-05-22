@@ -102,15 +102,8 @@ int proc_init(proc_t *proc)
 
     proc->pid = proc_pid_alloc();
 
-    proc->fds  = kmalloc(FDS_COUNT * sizeof(struct file));
-
-    if (!proc->fds) {
-        err = -ENOMEM;
-        goto free_resources;
-    }
-
-    memset(proc->fds, 0, FDS_COUNT * sizeof(struct file));
-
+    memset(proc->fds, 0, FDS_COUNT * (sizeof( struct file *)));
+    
     proc->sig_queue = queue_new();  /* Initalize signals queue */
     if (!proc->sig_queue) {
         err = -ENOMEM;
@@ -145,6 +138,8 @@ void proc_kill(proc_t *proc)
         kfree(vmr);
     }
 
+    for(int i =0; i < FDS_COUNT; i++) //release all fds
+        proc_fd_release(proc,i);
     /* Free kernel-space resources */
     kfree(proc->fds);
     kfree(proc->cwd);
@@ -216,8 +211,7 @@ int proc_reap(proc_t *proc)
 int proc_fd_get(proc_t *proc)
 {
     for (int i = 0; i < FDS_COUNT; ++i) {
-        if (!proc->fds[i].node) {
-            proc->fds[i].node = (void *) -1;    
+        if (!proc->fds[i]) {
             return i;
         }
     }
@@ -228,7 +222,14 @@ int proc_fd_get(proc_t *proc)
 void proc_fd_release(proc_t *proc, int fd)
 {
     if (fd < FDS_COUNT) {
-        proc->fds[fd].node = NULL;
+        if(proc->fds[fd])
+	{
+	    if(! --proc->fds[fd]->fd_count) // if no other fd using it
+	    {
+		kfree(proc->fds[fd]);
+	    }
+	}
+	
     }
 }
 

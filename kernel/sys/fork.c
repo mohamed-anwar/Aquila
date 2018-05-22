@@ -20,14 +20,16 @@
 
 static int copy_fds(proc_t *parent, proc_t *fork)
 {
-    /* Copy open files descriptors */
-    fork->fds = kmalloc(FDS_COUNT * sizeof(struct file));
-
+   
     if (!fork->fds)
         return -ENOMEM;
 
-    memcpy(fork->fds, parent->fds, FDS_COUNT * sizeof(struct file));
+    memcpy(fork->fds, parent->fds, FDS_COUNT * sizeof(struct file *));
 
+    for(int i =0; i < FDS_COUNT; i++) //increment the fd count
+	if(fork->fds[i])
+	    fork->fds[i]->fd_count++;
+    
     return 0;
 }
 

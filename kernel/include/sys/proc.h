@@ -4,6 +4,7 @@
 #include <core/system.h>
 #include <fs/vfs.h>
 #include <ds/queue.h>
+#include <config.h>
 
 typedef struct proc proc_t;
 typedef struct thread thread_t;
@@ -60,7 +61,7 @@ struct proc {
     struct queue_node *pgrp_node;   /* Process Group Queue Node */
 
     char        *name;       /* Process name */
-    struct file *fds;        /* Open file descriptors */
+    struct file *fds[FDS_COUNT];        /* Open file descriptors */
     proc_t      *parent;     /* Parent process */
     char        *cwd;        /* Current Working Directory */
 
