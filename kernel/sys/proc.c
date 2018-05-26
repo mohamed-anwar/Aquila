@@ -218,9 +218,8 @@ int proc_fd_get(proc_t *proc)
 
 void proc_fd_release(proc_t *proc, int fd)
 {
-    if (fd < FDS_COUNT && proc->fds[fd])
-    {
-	    if(!proc->fds[fd]->node || proc->fds[fd]->node->ref <= 0) // if no other fd using it
+    if (fd < FDS_COUNT && proc->fds[fd]){
+	    if(! --proc->fds[fd]->ref) // if no other fd using it
 		kfree(proc->fds[fd]);
 	    proc->fds[fd] = NULL;
     }

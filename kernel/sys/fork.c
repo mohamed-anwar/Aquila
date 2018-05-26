@@ -28,7 +28,7 @@ static int copy_fds(proc_t *parent, proc_t *fork)
 
     for(int i =0; i < FDS_COUNT; i++) //increment the ref count
 	if(fork->fds[i])
-	    fork->fds[i]->node->ref++;
+	    fork->fds[i]->ref++;
     
     return 0;
 }
