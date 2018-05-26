@@ -907,7 +907,6 @@ done:
     return 0;
 }
 
-inline
 struct file *new_file(struct inode *node, off_t offset, int flags)
 {
     struct file *f = kmalloc(sizeof(struct file));
