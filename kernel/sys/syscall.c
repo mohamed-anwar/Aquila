@@ -60,15 +60,15 @@ static void sys_close(int fildes)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fildes];
+    struct file *file = cur_thread->owner->fds[fildes];
     
-    if (!file->node) {
+    if (!file) {
         arch_syscall_return(cur_thread, -EBADFD);
         return;
     }
 
     int ret = vfs_file_close(file);
-    cur_thread->owner->fds[fildes].node = NULL;
+    proc_fd_release(cur_thread->owner,fildes); // fd must be released like that
     arch_syscall_return(cur_thread, ret);
 }
 
@@ -123,15 +123,14 @@ static void sys_fstat(int fildes, struct stat *buf)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fildes];
+    struct file *file = cur_thread->owner->fds[fildes];
     
-    if (!file->node) {
+    if (!file) {
         arch_syscall_return(cur_thread, -EBADFD);
         return;
     }
 
     struct inode *inode = file->node;
-
     int ret = vfs_stat(inode, buf);
     arch_syscall_return(cur_thread, ret);
 }
@@ -151,9 +150,9 @@ static void sys_isatty(int fildes)
         return; 
     }
 
-    struct inode *node = cur_thread->owner->fds[fildes].node;
+    struct file *f = cur_thread->owner->fds[fildes];
 
-    if (!node) {    /* Invalid File Descriptor */
+    if (!f) {    /* Invalid File Descriptor */
         arch_syscall_return(cur_thread, -EBADFD);
         return;
     }
@@ -183,9 +182,9 @@ static void sys_lseek(int fildes, off_t offset, int whence)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fildes];
+    struct file *file = cur_thread->owner->fds[fildes];
 
-    if (!file->node) {    /* Invalid File Descriptor */
+    if (!file) {    /* Invalid File Descriptor */
         arch_syscall_return(cur_thread, -EBADFD);
         return;
     }
@@ -199,7 +198,7 @@ static void sys_open(const char *path, int oflags)
     printk("[%d:%d] %s: open(path=%s, oflags=0x%x)\n", cur_thread->owner->pid, cur_thread->tid, cur_thread->owner->name, path, oflags);
     
     int fd = proc_fd_get(cur_thread->owner);  /* Find a free file descriptor */
-
+    
     if (fd == -1) {     /* No free file descriptor */
         /* Reached maximum number of open file descriptors */
         arch_syscall_return(cur_thread, -EMFILE);
@@ -230,22 +229,15 @@ static void sys_open(const char *path, int oflags)
 
     if (ret)
         goto done;
-
 o_creat:
-    cur_thread->owner->fds[fd] = (struct file) {
-        .node = inode,
-        .offset = 0,
-        .flags = oflags,
-    };
-
-    if ((ret = vfs_perms_check(&cur_thread->owner->fds[fd], &uio)))
+    cur_thread->owner->fds[fd] = new_file(inode,0,oflags);
+    if ((ret = vfs_perms_check(cur_thread->owner->fds[fd], &uio)))
         goto done;
-
-    ret = vfs_file_open(&cur_thread->owner->fds[fd]);
+    ret = vfs_file_open(cur_thread->owner->fds[fd]);
 
 done:
     if (ret < 0) { /* open returned an error code */
-        proc_fd_release(cur_thread->owner, fd);
+	proc_fd_release(cur_thread->owner,fd);
         vfs_close(inode);
     } else {
         ret = fd;
@@ -264,7 +256,7 @@ static void sys_read(int fildes, void *buf, size_t nbytes)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fildes];
+    struct file *file = cur_thread->owner->fds[fildes];
     int ret = vfs_file_read(file, buf, nbytes);
     arch_syscall_return(cur_thread, ret);
     return;
@@ -367,7 +359,7 @@ static void sys_write(int fd, void *buf, size_t nbytes)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fd];
+    struct file *file = cur_thread->owner->fds[fd];
     int ret = vfs_file_write(file, buf, nbytes);
     arch_syscall_return(cur_thread, ret);
     return;
@@ -382,7 +374,7 @@ static void sys_ioctl(int fd, int request, void *argp)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fd];
+    struct file *file = cur_thread->owner->fds[fd];
     int ret = vfs_file_ioctl(file, request, argp);
     arch_syscall_return(cur_thread, ret);
     return;
@@ -412,7 +404,7 @@ static void sys_readdir(int fd, struct dirent *dirent)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fd];
+    struct file *file = cur_thread->owner->fds[fd];
     int ret = vfs_file_readdir(file, dirent);
     arch_syscall_return(cur_thread, ret);
     return;
@@ -477,7 +469,9 @@ static void sys_pipe(int fd[2])
     printk("[%d:%d] %s: pipe(fd=%p)\n", cur_thread->owner->pid, cur_thread->tid, cur_thread->owner->name, fd);
     int fd1 = proc_fd_get(cur_thread->owner);
     int fd2 = proc_fd_get(cur_thread->owner);
-    pipefs_pipe(&cur_thread->owner->fds[fd1], &cur_thread->owner->fds[fd2]);
+    cur_thread->owner->fds[fd1] = new_file(0,0,0);
+    cur_thread->owner->fds[fd2] = new_file(0,0,0);
+    pipefs_pipe(cur_thread->owner->fds[fd1], cur_thread->owner->fds[fd2]);
     fd[0] = fd1;
     fd[1] = fd2;
     arch_syscall_return(cur_thread, 0);
@@ -704,9 +698,9 @@ static void sys_mmap(struct mmap_args *args, void **ret)
         return; 
     }
 
-    struct file *file = &cur_thread->owner->fds[fildes];
+    struct file *file = cur_thread->owner->fds[fildes];
 
-    if (!file->node) {    /* Invalid File Descriptor */
+    if (!file) {    /* Invalid File Descriptor */
         arch_syscall_return(cur_thread, -EBADFD);
         return;
     }

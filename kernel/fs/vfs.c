@@ -558,16 +558,12 @@ ssize_t vfs_file_write(struct file *file, void *buf, size_t nbytes)
 
     if (!file || !file->node)
         return -EINVAL;
-
     if (ISDEV(file->node))
         return kdev_file_write(&_INODE_DEV(file->node), file, buf, nbytes);
-
     if (!file->node->fs)
         return -EINVAL;
-
     if (!file->node->fs->fops.write)
         return -ENOSYS;
-
     return file->node->fs->fops.write(file, buf, nbytes);
 }
 
@@ -923,4 +919,14 @@ exec_perms:
     
 done:
     return 0;
+}
+
+struct file *new_file(struct inode *node, off_t offset, int flags)
+{
+    struct file *f = kmalloc(sizeof(struct file));
+    f->node = node;
+    f->offset = offset;
+    f->flags = flags;
+    f->ref = 1;
+    return f;
 }

@@ -124,9 +124,11 @@ struct file {
     };
     off_t offset;
     int flags;
-    //int ref;
+    int ref;
 } __packed;
 
+
+    
 typedef struct  {
     struct inode *node;
     uint32_t type;
@@ -138,6 +140,11 @@ struct fs_list {
     struct fs  *fs;
     struct fs_list *next;
 };
+
+/*FIX ME:*/
+//Not the right context to define this func
+struct file * new_file(struct inode *node, off_t offset, int flags);
+
 
 extern struct fs_list *registered_fs;
 extern struct inode *vfs_root;
