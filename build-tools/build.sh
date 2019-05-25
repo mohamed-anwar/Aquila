@@ -72,11 +72,11 @@ set -e
 echo "Downloading Packages";
 
 if [[ ! -f "pkgs/$BINUTILS.tar.gz" ]]; then
-    wget -P pkgs/ https://ftp.gnu.org/gnu/binutils/binutils-2.28.tar.gz;
+    wget -P pkgs/ https://ftp.gnu.org/gnu/binutils/$BINUTILS.tar.gz;
 fi;
 
 if [[ ! -f "pkgs/$GCC.tar.gz" ]]; then
-    wget -P pkgs/ https://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.gz;
+    wget -P pkgs/ https://ftp.gnu.org/gnu/gcc/$GCC/$GCC.tar.gz;
 fi;
 
 if [[ ! -f "pkgs/$AUTOCONF.tar.gz" ]]; then
