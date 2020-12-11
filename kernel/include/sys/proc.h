@@ -89,7 +89,7 @@ struct proc {
     /** User ID */
     uid_t uid;
 
-    /** Groupd ID */
+    /** Group ID */
     gid_t gid;
 
     /** Process initial heap pointer */
