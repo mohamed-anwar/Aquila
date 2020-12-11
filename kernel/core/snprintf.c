@@ -122,7 +122,9 @@ int vsnprintf(char *s, size_t n, const char *fmt, va_list args)
                     case 's':   /* char * */
                         ret += snputs(s + ret, n - ret, (char*)va_arg(args, char*));
                         break;
-                    case 'd': /* decimal */
+                    case '%':
+                        ret += snputc(s + ret, n - ret, '%');
+                    case 'd':   /* decimal */
                         ret += snputud(s + ret, n - ret, (uint32_t)va_arg(args, uint32_t));
                         break;
                     case 'l':   /* long */
